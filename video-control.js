@@ -17,3 +17,4 @@ if (domain) {
 }
 
 // TODO: If going from youtube.com to /watch, script does not run.
+// TODO: When visiting linkedin, script runs 3 times.
