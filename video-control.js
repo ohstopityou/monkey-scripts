@@ -21,6 +21,14 @@ const POLLING_INTERVAL_MS = 100;
 const SUPPORTED_SITES = ['youtube', 'linkedin', 'twitch'];
 let currentSite = 'unsupported'
 
+// Work in progress
+let togglePlay = null // Button
+let toggleFullscreen = null //Button
+const videoControls = {
+    ' ':        togglePlay,
+    'Enter':    toggleFullscreen
+}
+
 // Check if current site is supported
 for (let part of location.hostname.split('.')) {
     if (SUPPORTED_SITES.some(site => part === site)) {
@@ -31,6 +39,7 @@ for (let part of location.hostname.split('.')) {
 if (currentSite) {
 	console.log(`BetterVideoControl Enabled on ${currentSite}`)
 
+    // Wait for an element to load before returning it
     const waitForElement = (elementQuery) => new Promise(resolve => {
         const interval = setInterval(() => {
             const element = elementQuery()
@@ -42,56 +51,47 @@ if (currentSite) {
         }, POLLING_INTERVAL_MS)
     })
 
+    // Replace key action when pressing videoControl keyboard buttons
+    const replaceKeyAction = (key, eventType, newAction) => {
+        window.addEventListener(eventType, e => {
+            // Only stop default for specific keys
+            if (key == e.key) {
+                e.stopPropagation()
+                e.preventDefault()
+                if (newAction) { newAction() }
+            } 
+        }, true)
+        console.debug(`${newAction ? 'Replaced' : 'Removed'} ${eventType} action from '${key}'`)
+    }
+
+    // Remove keyAction on keydown for videoControls
+    for (const key of Object.keys(videoControls)) {
+        replaceKeyAction(key, 'keydown')
+    }
+
     switch(currentSite) {
         case 'linkedin':
             const VIDEO_PLAYER_SELECTOR = '.vjs-play-control'
             const VIDEO_FULLSCREEN_SELECTOR = '.vjs-fullscreen-control'
             
-            const videoPlayerQuery = () => document.querySelector(VIDEO_PLAYER_SELECTOR)
-            const videoSizeQuery = () => document.querySelector(VIDEO_FULLSCREEN_SELECTOR)
+            const playButtonQuery = () => document.querySelector(VIDEO_PLAYER_SELECTOR)
+            const fullscreenButtonQuery = () => document.querySelector(VIDEO_FULLSCREEN_SELECTOR)
             
-            // Observer that logs changes in videoPlayer status.
-            const observeVideoStatus = (videoPlayer) => {
-                let lastStatus = null;
-                const observer = new MutationObserver(() => {
-                    const status = videoPlayer.classList.contains('vjs-playing') ? 'playing' : 'paused';
-                    if (status !== lastStatus) {
-                        console.log(`Video changed to ${status}`)
-                        lastStatus = status;
-                    }
+            waitForElement(playButtonQuery).then((playButton) => {
+                replaceKeyAction(' ', 'keyup', () => {
+                    playButton.click()
+                    console.log('*Toggled play*')
                 })
             
-                observer.observe(videoPlayer, { attributes: true, attributeFilter: ['class'] });
-                console.log('Observing... o.o')
-            }
-            
-            // Changes action for pressing Space and Enter to nothing
-            const replaceKeyDefaults = (eType, action) => {
-                window.addEventListener(eType, e => {
-                    if ([' ', 'Enter'].includes(e.key)) {
-                        e.stopPropagation()
-                        e.preventDefault()
-                    }
-            
-                    if (action) {action(e)}
-                }, true)
-            }
-            
-            waitForElement(videoPlayerQuery).then((videoPlayer) => {
-                // Starts to observe
-                observeVideoStatus(videoPlayer)
-            
-                const videoSize = videoSizeQuery()
-            
-                // Replace keyDefaults with nothing
-                replaceKeyDefaults('keydown')
-                //
-                replaceKeyDefaults('keyup', (e) => {
-                    if (e.key === ' ') { videoPlayer.click(); console.log('*click*') }
-                    if (e.key === 'Enter') { videoSize.click(); console.log('*click*') }
+            }).catch(error => {console.error(`Error finding play O.o : ${error}`)})
+
+            waitForElement(fullscreenButtonQuery).then((fullscreenButton) => {
+                replaceKeyAction('Enter', 'keyup', () => {
+                    fullscreenButton.click()
+                    console.log('*Toggled fullscreen*')
                 })
             
-            }).catch(error => {console.error(`Error getting video player O.o : ${error}`)})
+            }).catch(error => {console.error(`Error finding fullscreen O.o : ${error}`)})
             break
 
         case 'youtube':
@@ -115,7 +115,23 @@ function debug(message) {
     }
   }
 
+/* Old Code
+// Observer that logs changes in videoPlayer status.
+            const observeVideoStatus = (videoPlayer) => {
+                let lastStatus = null;
+                const observer = new MutationObserver(() => {
+                    const status = videoPlayer.classList.contains('vjs-playing') ? 'playing' : 'paused';
+                    if (status !== lastStatus) {
+                        console.log(`Video changed to ${status}`)
+                        lastStatus = status;
+                    }
+                })
+            
+                observer.observe(videoPlayer, { attributes: true, attributeFilter: ['class'] });
+                console.log('Observing... o.o')
+            }
+/*
+
 // TODO: If going from youtube.com to /watch, script does not run.
 // TODO: Add random emoji or face like O.o
 // TODO: When visiting linkedin, script runs 3 times.
-// @require      file:///Users/thomassovik/GitHub/monkey-scripts/video-control.js
