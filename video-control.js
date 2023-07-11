@@ -14,9 +14,22 @@
 
 // ==/UserScript==
 
-let domain = window.location.hostname.split('.')[1]
+
+// Checks if hostname is supported
+// TODO: Use regex to check pagepath
+const SUPPORTED_SITES = ['youtube', 'linkedin', 'twitch'];
+let currentSite = ''
+
+let domain = window.location.hostname.split('.')
+
+for (let part of domain) {
+    if (SUPPORTED_SITES.some(site => part == site)) {
+      currentSite = part;
+    }
+  }
+
 if (domain) {
-	console.log(`BetterVideoControl Enabled on ${domain}`)
+	console.log(`BetterVideoControl Enabled on ${currentSite}`)
 }
 
 const VIDEO_PLAYER_SELECTOR = '.vjs-play-control'
