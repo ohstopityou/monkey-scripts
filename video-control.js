@@ -14,9 +14,10 @@
 
 // ==/UserScript==
 
-
 // Checks if hostname is supported
 // TODO: Use regex to check pagepath
+const DEBUG_ENABLED = true;
+const POLLING_INTERVAL_MS = 100;
 const SUPPORTED_SITES = ['youtube', 'linkedin', 'twitch'];
 let currentSite = 'unsupported'
 
@@ -30,24 +31,24 @@ for (let part of location.hostname.split('.')) {
 if (currentSite) {
 	console.log(`BetterVideoControl Enabled on ${currentSite}`)
 
+    const waitForElement = (elementQuery) => new Promise(resolve => {
+        const interval = setInterval(() => {
+            const element = elementQuery()
+            if(element) {
+                clearInterval(interval)
+                debug(element)
+                resolve(element);
+            }
+        }, POLLING_INTERVAL_MS)
+    })
+
     switch(currentSite) {
         case 'linkedin':
             const VIDEO_PLAYER_SELECTOR = '.vjs-play-control'
             const VIDEO_FULLSCREEN_SELECTOR = '.vjs-fullscreen-control'
-            const POLLING_INTERVAL_MS = 100;
-            const queryVideoPlayer = () => document.querySelector(VIDEO_PLAYER_SELECTOR)
-            const queryVideoSize = () => document.querySelector(VIDEO_FULLSCREEN_SELECTOR)
             
-            const getVideoPlayer = () => new Promise(resolve => {
-                const interval = setInterval(() => {
-                    const videoPlayer = queryVideoPlayer()
-                    if(videoPlayer) {
-                        clearInterval(interval)
-                        console.log('VideoPlayer found')
-                        resolve(videoPlayer);
-                    }
-                }, POLLING_INTERVAL_MS)
-            })
+            const videoPlayerQuery = () => document.querySelector(VIDEO_PLAYER_SELECTOR)
+            const videoSizeQuery = () => document.querySelector(VIDEO_FULLSCREEN_SELECTOR)
             
             // Observer that logs changes in videoPlayer status.
             const observeVideoStatus = (videoPlayer) => {
@@ -61,7 +62,7 @@ if (currentSite) {
                 })
             
                 observer.observe(videoPlayer, { attributes: true, attributeFilter: ['class'] });
-                console.log('observing...')
+                console.log('Observing... o.o')
             }
             
             // Changes action for pressing Space and Enter to nothing
@@ -76,11 +77,11 @@ if (currentSite) {
                 }, true)
             }
             
-            getVideoPlayer().then((videoPlayer) => {
+            waitForElement(videoPlayerQuery).then((videoPlayer) => {
                 // Starts to observe
                 observeVideoStatus(videoPlayer)
             
-                const videoSize = queryVideoSize()
+                const videoSize = videoSizeQuery()
             
                 // Replace keyDefaults with nothing
                 replaceKeyDefaults('keydown')
@@ -90,19 +91,31 @@ if (currentSite) {
                     if (e.key === 'Enter') { videoSize.click(); console.log('*click*') }
                 })
             
-            }).catch(error => {console.error('Error getting video player: ', error)})
+            }).catch(error => {console.error(`Error getting video player O.o : ${error}`)})
             break
+
         case 'youtube':
             console.log('Not Implemented...')
             break
+
         case 'twitch':            
             console.log('Not Implemented...')
             break
+
         default:
             console.error(`${location.hostname} not supported`)
     }
 }
 
+//Helper functions
+
+function debug(message) {
+    if (DEBUG_ENABLED) {
+      console.debug(message);
+    }
+  }
+
 // TODO: If going from youtube.com to /watch, script does not run.
+// TODO: Add random emoji or face like O.o
 // TODO: When visiting linkedin, script runs 3 times.
 // @require      file:///Users/thomassovik/GitHub/monkey-scripts/video-control.js
