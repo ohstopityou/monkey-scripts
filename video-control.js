@@ -45,59 +45,55 @@ const site_selectors = {
 	}
 }
 
+// TODO: Add timeout
+// Wait for an element to load before returning it
+const waitForElement = elementQuery =>
+	new Promise(resolve => {
+		const interval = setInterval(() => {
+			const element = elementQuery()
+			if (element) {
+				clearInterval(interval)
+				resolve(element)
+			}
+		}, POLLING_INTERVAL_MS)
+	})
+
+// Replace key action when pressing videoControl keyboard buttons
+// Should react to changes in videoControl dynamically
+const replaceKeyActions = () =>
+	['keydown', 'keyup'].forEach(eventType =>
+		window.addEventListener(
+			eventType,
+			e => {
+				if (videoControls[e.key]) {
+					e.stopPropagation()
+					e.preventDefault()
+					// Click videoControl button corresponding to key on keyup
+					if (eventType === 'keyup') {
+						videoControls[e.key].click()
+						console.debug(`'${e.key}' pressed, ${videoControls[e.key]} clicked.`)
+					}
+				}
+			},
+			true
+		)
+	)
+
+// Async function that waits for videobuttons to load, then maps them to new keys
+const setupControls = async () => {
+	const playButton = await waitForElement(site_selectors[currentSite].playButtonQuery)
+	const fullscreenButton = await waitForElement(site_selectors[currentSite].fullscreenButtonQuery)
+
+	videoControls[SPACE_KEY] = playButton
+	videoControls[ENTER_KEY] = fullscreenButton
+
+	replaceKeyActions()
+}
+
 // Check if current site is supported
 if (SUPPORTED_SITES.includes(currentSite)) {
-	console.log(`BetterVideoControl Enabled on ${currentSite}`)
-
-	// TODO: Add timeout
-	// Wait for an element to load before returning it
-	const waitForElement = elementQuery =>
-		new Promise(resolve => {
-			const interval = setInterval(() => {
-				const element = elementQuery()
-				if (element) {
-					clearInterval(interval)
-					resolve(element)
-				}
-			}, POLLING_INTERVAL_MS)
-		})
-
-	// Replace key action when pressing videoControl keyboard buttons
-	// Should react to changes in videoControl dynamically
-	const replaceKeyActions = () =>
-		['keydown', 'keyup'].forEach(eventType =>
-			window.addEventListener(
-				eventType,
-				e => {
-					if (videoControls[e.key]) {
-						e.stopPropagation()
-						e.preventDefault()
-						// Click videoControl button corresponding to key on keyup
-						if (eventType === 'keyup') {
-							videoControls[e.key].click()
-							console.debug(`'${e.key}' pressed, ${videoControls[e.key]} clicked.`)
-						}
-					}
-				},
-				true
-			)
-		)
-
-	const playButtonPromise = waitForElement(site_selectors[currentSite].playButtonQuery)
-	const fullScreenButtonPromise = waitForElement(site_selectors[currentSite].fullscreenButtonQuery)
-
-	// Wait for buttons to load, then add event listener
-	Promise.all([playButtonPromise, fullScreenButtonPromise])
-		.then(([playButton, fullscreenButton]) => {
-			// Update videoControls
-			videoControls[SPACE_KEY] = playButton
-			videoControls[ENTER_KEY] = fullscreenButton
-			console.log('videoControl buttons updated')
-			console.log(videoControls)
-			// Replaces key actions with corresponding button click
-			replaceKeyActions()
-		})
-		.catch(error => console.error(`Error finding play or fullscreen button: ${error}`))
+	setupControls().catch(error => console.error(`Failed to setup controls: ${error}`))
+	console.log(`BetterVideoControl enabled on ${currentSite}`)
 } else {
 	console.debug(`'${currentSite} is not supported by BetterVideoControls'`)
 }
