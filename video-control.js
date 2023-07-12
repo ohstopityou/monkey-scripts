@@ -18,18 +18,20 @@ const POLLING_INTERVAL_MS = 100
 const SPACE_KEY = ' '
 const ENTER_KEY = 'Enter'
 
-// Checks if hostname is supported
-const SUPPORTED_SITES = ['youtube', 'linkedin', 'twitch']
-// TODO: check if url changes using window.onpopstate
-const currentSite = window.location.hostname.match(/(?:www\.)?(.*?)\./)[1]
-
 // Replaced with buttons once loaded
 const videoControls = {
 	[SPACE_KEY]: null,
 	[ENTER_KEY]: null
 }
 
-const site_selectors = {
+// TODO: Add key map for description/type
+
+// TODO: check if url changes using window.onpopstate
+const currentSite = window.location.hostname.match(/(?:www\.)?(.*?)\./)[1]
+
+// Supported sites, and their button queries
+// TODO: add domain end (.com/.tv)
+const SUPPORTED_SITES = {
 	linkedin: {
 		playButtonQuery: () => document.querySelector('.vjs-play-control'),
 		fullscreenButtonQuery: () => document.querySelector('.vjs-fullscreen-control')
@@ -72,6 +74,7 @@ const replaceKeyActions = () =>
 					// Click videoControl button corresponding to key on keyup
 					if (eventType === 'keyup') {
 						videoControls[e.key].click()
+						// TODO: Get name from key button map
 						console.debug(`'${e.key}' pressed, ${videoControls[e.key]} clicked.`)
 					}
 				}
@@ -83,8 +86,9 @@ const replaceKeyActions = () =>
 // Main program, waits for videobuttons to load, then maps them to new keys
 const enableVideoControls = async () => {
 	try {
-		const playButton = await waitForElement(site_selectors[currentSite].playButtonQuery)
-		const fullscreenButton = await waitForElement(site_selectors[currentSite].fullscreenButtonQuery)
+		const siteSelectors = SUPPORTED_SITES[currentSite]
+		const playButton = await waitForElement(siteSelectors.playButtonQuery)
+		const fullscreenButton = await waitForElement(siteSelectors.fullscreenButtonQuery)
 
 		videoControls[SPACE_KEY] = playButton
 		videoControls[ENTER_KEY] = fullscreenButton
@@ -99,7 +103,8 @@ const enableVideoControls = async () => {
 }
 
 // Enables video controls if current site supports it
-if (SUPPORTED_SITES.includes(currentSite)) {
+// TODO: When using dict, do currentsite in SUPPORTED_SITES
+if (currentSite in SUPPORTED_SITES) {
 	enableVideoControls()
 } else {
 	console.debug(`'${currentSite} is not supported by BetterVideoControls'`)
@@ -107,3 +112,4 @@ if (SUPPORTED_SITES.includes(currentSite)) {
 
 // TODO: If going from youtube.com to /watch, script does not run.
 // TODO: Add random emoji or face like O.o
+// TODO: Add observer for debugging?
