@@ -20,10 +20,11 @@ const ENTER_KEY = 'Enter'
 
 // Checks if hostname is supported
 const SUPPORTED_SITES = ['youtube', 'linkedin', 'twitch']
-let currentSite = window.location.hostname.match(/(?:www\.)?(.*?)\./)[1]
+// TODO: check if url changes using window.onpopstate
+const currentSite = window.location.hostname.match(/(?:www\.)?(.*?)\./)[1]
 
 // Replaced with buttons once loaded
-let videoControls = {
+const videoControls = {
 	[SPACE_KEY]: null,
 	[ENTER_KEY]: null
 }
@@ -79,21 +80,27 @@ const replaceKeyActions = () =>
 		)
 	)
 
-// Async function that waits for videobuttons to load, then maps them to new keys
-const setupControls = async () => {
-	const playButton = await waitForElement(site_selectors[currentSite].playButtonQuery)
-	const fullscreenButton = await waitForElement(site_selectors[currentSite].fullscreenButtonQuery)
+// Main program, waits for videobuttons to load, then maps them to new keys
+const enableVideoControls = async () => {
+	try {
+		const playButton = await waitForElement(site_selectors[currentSite].playButtonQuery)
+		const fullscreenButton = await waitForElement(site_selectors[currentSite].fullscreenButtonQuery)
 
-	videoControls[SPACE_KEY] = playButton
-	videoControls[ENTER_KEY] = fullscreenButton
+		videoControls[SPACE_KEY] = playButton
+		videoControls[ENTER_KEY] = fullscreenButton
 
-	replaceKeyActions()
+		// Adds eventlisteners
+		replaceKeyActions()
+
+		console.log(`BetterVideoControl enabled on ${currentSite}`)
+	} catch (err) {
+		console.error(`Failed to setup controls: ${err}`)
+	}
 }
 
-// Check if current site is supported
+// Enables video controls if current site supports it
 if (SUPPORTED_SITES.includes(currentSite)) {
-	setupControls().catch(error => console.error(`Failed to setup controls: ${error}`))
-	console.log(`BetterVideoControl enabled on ${currentSite}`)
+	enableVideoControls()
 } else {
 	console.debug(`'${currentSite} is not supported by BetterVideoControls'`)
 }
