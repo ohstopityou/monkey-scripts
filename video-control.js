@@ -14,17 +14,18 @@
 
 // ==/UserScript==
 
-// Checks if hostname is supported
-// TODO: Use regex to check pagepath
-const DEBUG_ENABLED = true;
 const POLLING_INTERVAL_MS = 100;
+const SPACE_KEY = ' ';
+const ENTER_KEY = 'Enter';
+
+// Checks if hostname is supported
 const SUPPORTED_SITES = ['youtube', 'linkedin', 'twitch'];
 let currentSite = window.location.hostname.match(/(?:www\.)?(.*?)\./)[1]
 
 // Replaced with buttons once loaded
 let videoControls = {
-    ' ':        null,
-    'Enter':    null
+    [SPACE_KEY]:        null,
+    [ENTER_KEY]:    null
 }
 
 const site_selectors = {
@@ -54,8 +55,7 @@ if (SUPPORTED_SITES.includes(currentSite)) {
             const element = elementQuery()
             if(element) {
                 clearInterval(interval)
-                debug(element)
-                resolve(element);
+                resolve(element)
             }
         }, POLLING_INTERVAL_MS)
     })
@@ -78,15 +78,15 @@ if (SUPPORTED_SITES.includes(currentSite)) {
         })
     }
 
-    playButtonPromise = waitForElement(site_selectors[currentSite].playButtonQuery)
-    fullScreenButtonPromise = waitForElement(site_selectors[currentSite].fullscreenButtonQuery)
+    const playButtonPromise = waitForElement(site_selectors[currentSite].playButtonQuery)
+    const fullScreenButtonPromise = waitForElement(site_selectors[currentSite].fullscreenButtonQuery)
 
     // Wait for buttons to load, then add event listener
     Promise.all([playButtonPromise, fullScreenButtonPromise])
         .then(([playButton, fullscreenButton]) => {
             // Update videoControls
-            videoControls[' '] = playButton
-            videoControls['Enter'] = fullscreenButton
+            videoControls[SPACE_KEY] = playButton
+            videoControls[ENTER_KEY] = fullscreenButton
             console.log('videoControl buttons updated')
             console.log(videoControls)
             // Replaces key actions with corresponding button click
@@ -96,15 +96,9 @@ if (SUPPORTED_SITES.includes(currentSite)) {
             console.error(`Error finding play or fullscreen button: ${error}`)
         })
 
+} else {
+    console.debug(`'${currentSite} is not supported by BetterVideoControls'`)
 }
-
-//Helper functions
-
-function debug(message) {
-    if (DEBUG_ENABLED) {
-      console.debug(message);
-    }
-  }
 
 // TODO: If going from youtube.com to /watch, script does not run.
 // TODO: Add random emoji or face like O.o
